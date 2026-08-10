@@ -15,6 +15,7 @@ from nlu.sentiment_analyzer import SentimentAnalyzer
 from engine.memory import CallMemory
 from engine.response_generator import ResponseEngine
 from engine.state_machine import SalesStateMachine
+from engine.action_engine import ActionEngine
 
 # Load environment variables
 load_dotenv()
@@ -26,6 +27,7 @@ ner = EntityExtractor()
 sentiment = SentimentAnalyzer()
 response_gen = ResponseEngine()
 fsm = SalesStateMachine()
+action_engine = ActionEngine()
 buffer = ChunkBuffer(window_seconds=float(os.getenv("CHUNK_BUFFER_SECONDS", 1.5)))
 
 # Dashboard Subscriber List
@@ -33,8 +35,8 @@ ai_subscribers = []
 
 async def process_intelligence(raw_text):
     """
-    THE PARALLEL NLU PIPELINE:
-    Executes multiple AI tasks at once to minimize latency.
+    THE PARALLEL NLU & ACTION PIPELINE:
+    Executes NLU tasks in parallel, evaluates tool triggers, and generates context-aware advice.
     """
     call_id = "test_call_123" 
     print(f"\n[AI BRAIN] Analyzing Flow: '{raw_text}'")
@@ -52,23 +54,29 @@ async def process_intelligence(raw_text):
         # Execute all tasks simultaneously
         cleaned_text, mood_result, entities, knowledge_context = await asyncio.gather(*tasks)
 
-        # Step 2: Generate response using the 4-Block Template
-        advice = await response_gen.generate_advice(cleaned_text, knowledge_context)
+        # Step 2: Evaluate and execute agent tool actions (Function Calling)
+        executed_actions = await action_engine.eval_and_execute_actions(cleaned_text, entities)
+        if executed_actions:
+            print(f"[ACTION ENGINE] Executed {len(executed_actions)} Tool Action(s): {[a['tool'] for a in executed_actions]}")
+
+        # Step 3: Generate response incorporating knowledge context & action execution results
+        advice = await response_gen.generate_advice(cleaned_text, knowledge_context, executed_actions=executed_actions)
         
         if advice:
-            # Step 3: Determine Phase and Update Memory
+            # Step 4: Determine Phase and Update Memory
             current_state = memory.get_state(call_id)
             new_phase = fsm.determine_phase(cleaned_text, current_state)
             memory.set_state(call_id, new_phase)
             memory.update_transcript(call_id, cleaned_text)
 
-            # Step 4: Prepare JSON payload for the Dashboard/UI
+            # Step 5: Prepare JSON payload for the Dashboard/UI
             payload = {
                 "type": "ai_insight",
                 "phase": new_phase,
                 "mood": mood_result.split('|')[0].strip(),
                 "entities": entities,
                 "advice": advice,
+                "actions": executed_actions,
                 "raw_text": cleaned_text
             }
             

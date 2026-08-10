@@ -5,12 +5,13 @@ class ResponseEngine:
     def __init__(self):
         self.client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-    async def generate_advice(self, customer_input, knowledge_context=None):
+    async def generate_advice(self, customer_input, knowledge_context=None, executed_actions=None):
         """
         Cognitive Response Engine:
         1. Detects Domain (Sales vs Tech) using retrieved Pinecone Rules.
-        2. Applies phonetic mapping (psp/php) based on that Domain.
-        3. Formats Sales advice in 4-Blocks or Technical advice in 3-Steps.
+        2. Incorporates results from Action Engine tool executions (if any).
+        3. Applies phonetic mapping (psp/php) based on that Domain.
+        4. Formats Sales advice in 4-Blocks or Technical advice in 3-Steps.
         """
         
         # If no knowledge was found in Pinecone, we use a default fallback instruction
@@ -21,11 +22,17 @@ class ResponseEngine:
                 "If not, acknowledge and pivot back to insurance discovery."
             )
 
+        actions_context = ""
+        if executed_actions:
+            import json
+            actions_context = f"\nExecuted Tool Results:\n{json.dumps(executed_actions, indent=2)}\n(IMPORTANT: Use these exact figures/status in your advice if applicable!)\n"
+
         # The core logic prompt for the AI Agent
         prompt = (
             f"You are a Senior Wealth Advisor and Lead Systems Engineer.\n"
             f"Customer Speech: '{customer_input}'.\n\n"
-            f"Retrieved Intelligence Rules & Tactics:\n{knowledge_context}\n\n"
+            f"Retrieved Intelligence Rules & Tactics:\n{knowledge_context}\n"
+            f"{actions_context}\n"
             f"STRICT INSTRUCTIONS:\n"
             f"1. Detect Domain: Use the 'Dynamic Domain Detection' rule to set context.\n"
             f"2. Correct Phonetics: If 'psp' or 'php' is used, map it based on the detected domain.\n"
