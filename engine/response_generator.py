@@ -1,5 +1,6 @@
-from openai import AsyncOpenAI
 import os
+import json
+from openai import AsyncOpenAI
 
 class ResponseEngine:
     def __init__(self):
@@ -27,7 +28,6 @@ class ResponseEngine:
 
         actions_context = ""
         if executed_actions:
-            import json
             actions_context = f"\nExecuted Tool Results:\n{json.dumps(executed_actions, indent=2)}\n(IMPORTANT: Use these exact figures/status in your advice if applicable!)\n"
 
         # The core logic prompt for the AI Agent

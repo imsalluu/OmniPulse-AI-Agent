@@ -1,4 +1,5 @@
 import os
+import json
 from openai import AsyncOpenAI
 from dotenv import load_dotenv
 
@@ -28,7 +29,6 @@ class EntityExtractor:
                 response_format={"type": "json_object"},
                 temperature=0
             )
-            import json
             return json.loads(response.choices[0].message.content)
         except Exception as e:
             print(f"[NER ERROR] {e}")
