@@ -6,12 +6,16 @@ load_dotenv()
 
 class SentimentAnalyzer:
     def __init__(self):
-        self.client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        openai_key = os.getenv("OPENAI_API_KEY")
+        self.client = AsyncOpenAI(api_key=openai_key) if openai_key else None
 
     async def analyze_sentiment(self, text):
         """
         Determines the customer's mood: Interested, Frustrated, or Neutral.
         """
+        if not self.client:
+            return "Neutral | 0.5"
+
         prompt = (
             f"Analyze the sentiment of this customer statement: '{text}'. "
             f"Return a single line: [LABEL] | [SCORE 0.0 to 1.0]. "

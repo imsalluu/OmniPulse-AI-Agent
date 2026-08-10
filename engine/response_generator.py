@@ -3,7 +3,8 @@ import os
 
 class ResponseEngine:
     def __init__(self):
-        self.client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        openai_key = os.getenv("OPENAI_API_KEY")
+        self.client = AsyncOpenAI(api_key=openai_key) if openai_key else None
 
     async def generate_advice(self, customer_input, knowledge_context=None, executed_actions=None):
         """
@@ -13,7 +14,9 @@ class ResponseEngine:
         3. Applies phonetic mapping (psp/php) based on that Domain.
         4. Formats Sales advice in 4-Blocks or Technical advice in 3-Steps.
         """
-        
+        if not self.client:
+            return "[Validation] Understood. [Pivot] Let us discuss your insurance needs. [Knowledge] We offer tailored wealth and protection plans. [Soft Close] Would you like a quote?"
+
         # If no knowledge was found in Pinecone, we use a default fallback instruction
         if not knowledge_context:
             knowledge_context = (

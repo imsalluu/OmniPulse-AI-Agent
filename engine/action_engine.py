@@ -87,7 +87,8 @@ class ActionEngine:
     Evaluates customer transcript for actionable intents and executes corresponding tools via OpenAI Function Calling.
     """
     def __init__(self):
-        self.client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        openai_key = os.getenv("OPENAI_API_KEY")
+        self.client = AsyncOpenAI(api_key=openai_key) if openai_key else None
 
     # --- INDIVIDUAL TOOL EXECUTORS ---
     def _execute_calculate_insurance_quote(self, age: int, coverage_amount: float, product_type: str, term_years: int = 20) -> dict:
@@ -138,6 +139,9 @@ class ActionEngine:
         Evaluates customer speech using OpenAI Function Calling.
         Executes triggered tools and returns structured execution results.
         """
+        if not self.client:
+            return []
+
         prompt = (
             f"Analyze this customer statement from a live call: '{cleaned_text}'.\n"
             f"Extracted Entities: {json.dumps(entities or {})}.\n"

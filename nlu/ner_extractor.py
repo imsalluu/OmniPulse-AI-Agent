@@ -6,12 +6,16 @@ load_dotenv()
 
 class EntityExtractor:
     def __init__(self):
-        self.client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        openai_key = os.getenv("OPENAI_API_KEY")
+        self.client = AsyncOpenAI(api_key=openai_key) if openai_key else None
 
     async def extract_entities(self, text):
         """
         Extracts Names, Dates, Amounts, and Products from sales transcript.
         """
+        if not self.client:
+            return {}
+
         prompt = (
             f"Analyze this insurance sales transcript: '{text}'. "
             f"Extract key entities: [PERSON, AMOUNT, DATE, PRODUCT, SPOUSE_NAME]. "
