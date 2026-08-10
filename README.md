@@ -1,9 +1,9 @@
-# InsureFlow AI Agent
+# OmniPulse AI Agent
 
 An advanced, real-time AI Agent & Co-pilot for Insurance Sales & Technical Support calls.
 
 ## Overview
-InsureFlow AI Agent processes real-time audio transcripts via WebSockets, executes a parallel NLU pipeline (Contextual Correction, Sentiment Analysis, NER, Pinecone RAG Vector Search), triggers automated tools (Function Calling), and generates real-time advice and coaching for agents while tracking sales conversation phases in Redis.
+OmniPulse AI Agent processes real-time audio transcripts via WebSockets, executes a parallel NLU pipeline (Contextual Correction, Sentiment Analysis, NER, Pinecone RAG Vector Search), triggers automated tools (Function Calling), and generates real-time advice and coaching for agents while tracking sales conversation phases in Redis.
 
 ## Features
 - **Real-Time Streaming & Buffer:** Ingests live audio transcript chunks over WebSocket with silence/word-count thresholding.

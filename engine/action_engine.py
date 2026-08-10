@@ -155,7 +155,7 @@ class ActionEngine:
             response = await self.client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
-                    {"role": "system", "content": "You are an automated Action Dispatcher for an Insurance AI Co-pilot."},
+                    {"role": "system", "content": "You are an automated Action Dispatcher for OmniPulse AI Agent."},
                     {"role": "user", "content": prompt}
                 ],
                 tools=TOOLS_SCHEMA,
