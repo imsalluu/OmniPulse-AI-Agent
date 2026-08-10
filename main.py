@@ -42,13 +42,17 @@ async def process_intelligence(raw_text):
     print(f"\n[AI BRAIN] Analyzing Flow: '{raw_text}'")
 
     try:
+        # Step 0: Fetch current conversation history & sales state from Memory
+        current_history = memory.get_full_history(call_id)
+        current_state = memory.get_state(call_id)
+
         # Step 1: Run NLU tasks in Parallel using asyncio.gather
         # This reduces round-trip time to OpenAI/Pinecone significantly
         tasks = [
             nlu.contextual_correction(raw_text),
             sentiment.analyze_sentiment(raw_text),
             ner.extract_entities(raw_text),
-            nlu.get_relevant_tactic(raw_text) # Pinecone Search
+            nlu.get_relevant_tactic(raw_text, conversation_history=current_history, current_phase=current_state) # Multi-turn Hybrid RAG Search
         ]
         
         # Execute all tasks simultaneously

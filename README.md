@@ -10,9 +10,10 @@ InsureFlow AI Agent processes real-time audio transcripts via WebSockets, execut
 - **Parallel NLU Pipeline:** Runs OpenAI GPT-4o-mini and Pinecone vector search simultaneously to reduce latency.
 - **Phonetic & Contextual Correction:** Automatically fixes domain-specific misheard terms (e.g., `psp` -> `premium` or `PHP`).
 - **Sentiment & Entity Extraction:** Detects customer mood (`Interested`, `Frustrated`, `Neutral`) and extracts entities (`PERSON`, `AMOUNT`, `DATE`, `PRODUCT`, `SPOUSE_NAME`).
+- **Multi-turn Hybrid RAG Search:** Combines multi-turn conversation context, sales phase state, and keyword relevance scoring to retrieve precise playbook tactics from Pinecone.
 - **Agent Action Triggers (Function Calling):** Automatically triggers insurance tools mid-call (Live Quote Calculation, SMS Document Dispatch, CRM Profile Lookup) via OpenAI Function Calling.
 - **Cognitive Response Generator:** Incorporates executed tool results into structured coaching advice (< 40 words) tailored to Sales (4-Block) or Technical (3-Step) domains.
-- **Sales State Machine & Memory:** Tracks sales phase (`Hook`, `Discovery`, `Objection`, `Closing`) and persists session history in Redis Cloud.
+- **Sales State Machine & Memory:** Tracks sales phase (`Hook`, `Discovery`, `Objection`, `Closing`) and persists session history in Redis Cloud with local in-memory fallback.
 - **Live Dashboard Broadcast:** Streams insights and executed tool results in real-time to front-end agent dashboards via `/transcript-stream` WebSocket.
 
 ## Architecture
@@ -27,7 +28,7 @@ InsureFlow AI Agent processes real-time audio transcripts via WebSockets, execut
 ├── 1. Contextual Correction (OpenAI GPT-4o-mini)
 ├── 2. Sentiment Analyzer (OpenAI)
 ├── 3. Entity Extractor (NER - OpenAI)
-└── 4. Knowledge Retriever (Pinecone Vector RAG)
+└── 4. Multi-turn Hybrid RAG (Pinecone + Keyword Rerank)
            │
            ▼
 [Agent Action Engine (Function Calling)]

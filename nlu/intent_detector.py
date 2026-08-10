@@ -47,37 +47,63 @@ class NLUManager:
             print(f"[NLU CORRECTION ERROR] {e}")
             return raw_text.strip()
 
-    async def get_relevant_tactic(self, cleaned_text: str):
+    async def get_relevant_tactic(self, cleaned_text: str, conversation_history: str = "", current_phase: str = "Discovery"):
         """
-        Retrieves multiple context chunks from Pinecone to provide the AI 
-        with both specific tactics and global intelligence rules.
+        Multi-turn Hybrid RAG Engine:
+        1. Assembles multi-turn query context merging sales stage, recent turns, and current speech.
+        2. Embeds the multi-turn context for dense vector similarity.
+        3. Performs hybrid keyword relevance scoring (boosting matches containing specific product names or objection triggers).
         """
         if not self.client or not self.index:
             return None
 
+        # Step 1: Assemble Multi-Turn Context Query
+        short_history = " ".join(conversation_history.strip().split()[-40:]) if conversation_history else ""
+        multi_turn_query = f"Sales Phase: {current_phase}. Call History: {short_history}. Current Customer Utterance: {cleaned_text}"
+
         try:
             embedding_res = await self.client.embeddings.create(
-                input=cleaned_text,
+                input=multi_turn_query,
                 model="text-embedding-3-small"
             )
             vector = embedding_res.data[0].embedding
 
-            # Query top 3 results to capture both Tactic and Intelligence Rules
+            # Step 2: Query top 5 candidates for hybrid reranking
             results = self.index.query(
                 vector=vector,
-                top_k=3,
+                top_k=5,
                 include_metadata=True,
                 namespace=self.namespace
             )
             
             if results and results.get('matches'):
-                combined_context = ""
-                for match in results['matches']:
-                    if match.get('score', 0) > 0.60 and 'metadata' in match:
-                        combined_context += f"\n--- Knowledge Chunk ---\n{match['metadata'].get('text', '')}\n"
-                
-                return combined_context if combined_context else None
-        except Exception as e:
-            print(f"[PINECONE RAG ERROR] {e}")
+                # Step 3: Hybrid Keyword & Score Reranking
+                keywords = [w.lower() for w in cleaned_text.split() if len(w) > 3]
+                scored_matches = []
 
-        return None
+                for match in results['matches']:
+                    base_score = match.get('score', 0)
+                    text = match.get('metadata', {}).get('text', '')
+                    text_lower = text.lower()
+
+                    # Keyword boosting: +0.05 for each key domain word match
+                    keyword_boost = sum(0.05 for kw in keywords if kw in text_lower)
+                    final_score = base_score + keyword_boost
+
+                    if final_score >= 0.55 and text:
+                        scored_matches.append((final_score, text))
+
+                # Sort by hybrid final score descending
+                scored_matches.sort(key=lambda x: x[0], reverse=True)
+
+                combined_context = ""
+                for score, chunk_text in scored_matches[:3]:
+                    combined_context += f"\n--- Knowledge Chunk (Relevance: {score:.2f}) ---\n{chunk_text}\n"
+
+                return combined_context if combined_context else None
+
+        except Exception as e:
+            print(f"[HYBRID RAG ERROR] {e}")
+
+        return None
+
